@@ -88,6 +88,7 @@ while(true) {
 	//$art = $out["Metadata"][1]["xesam:artUrl"][1] ?? null;
 	$length = $out["Metadata"][1]["mpris:length"][1] ?? null;
 	$position = $out["Position"][1] ?? null;
+	$file = $out["Metadata"][1]["xesam:url"][1] ?? null;
 
 	if(($out["PlaybackStatus"][1] ?? null) !== "Playing"
 	   || $title === null) {
@@ -128,7 +129,7 @@ while(true) {
 				'type' => 2,
 				'status_display_type' => 1,
 				'state' => $artist ?? $title,
-				'details' => $title,
+				'details' => $artist ? $title : ($file ? pathinfo($file, PATHINFO_BASENAME) : $title),
 			],
 		],
 	];
