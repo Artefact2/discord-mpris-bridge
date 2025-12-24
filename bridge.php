@@ -72,6 +72,7 @@ function parse_dbus_object(string &$object) {
 }
 
 $rpc = false;
+$last = null;
 
 while(true) {
 	/* XXX: don't hardcode mpv */
@@ -93,10 +94,12 @@ while(true) {
 	if(($out["PlaybackStatus"][1] ?? null) !== "Playing"
 	   || $title === null) {
 		if($rpc !== false) {
+			echo "disconnected", PHP_EOL;
 			fclose($rpc);
 			$rpc = false;
-			goto end;
+			$last = null;
 		}
+		goto end;
 	}
 
 	if($rpc === false) {
@@ -117,11 +120,11 @@ while(true) {
 			var_dump($json);
 			goto end;
 		}
+		echo "connected", PHP_EOL;
 	}
 
 	// https://discord.com/developers/docs/events/gateway-events#activity-object
 	$payload = [
-		'nonce' => time(),
 		'cmd' => 'SET_ACTIVITY',
 		'args' => [
 			'pid' => getmypid(),
@@ -133,6 +136,11 @@ while(true) {
 			],
 		],
 	];
+	if($last === $payload) {
+		goto end;
+	}
+	$last = $payload;
+
 	if($length > 0 && $position > 0) {
 		$t = time();
 		$start = (int)($t - $position / 1000000.0);
@@ -142,6 +150,8 @@ while(true) {
 			'end' => $end,
 		];
 	}
+
+	$payload['nonce'] = time();
 	$payload = json_encode($payload);
 	fwrite($rpc, pack('VV', 1, strlen($payload)).$payload);
 	$rep = fread($rpc, 4096);
@@ -152,6 +162,7 @@ while(true) {
 		var_dump($json);
 		goto end;
 	}
+	echo "sent activity", PHP_EOL;
 
 	end:
 	sleep(20);
